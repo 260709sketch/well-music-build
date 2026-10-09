@@ -1,0 +1,12 @@
+node_modules/
+.expo/
+dist/
+export_dist_fixed/
+embed/
+/ios/
+/android/
+build/
+*.ipa
+*.zip
+*.log
+.DS_Store

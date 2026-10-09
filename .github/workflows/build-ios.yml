@@ -1,0 +1,76 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-14
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+        env:
+          CI: '1'
+
+      - name: Apply patches (patch-package)
+        run: npx patch-package
+        env:
+          CI: '1'
+
+      - name: Expo prebuild (generate native iOS project)
+        run: npx expo prebuild --platform ios --no-install
+        env:
+          CI: '1'
+          EXPO_NO_TELEMETRY: '1'
+
+      - name: Verify lx user-api native injection
+        run: |
+          set -e
+          test -f ios/WellMusic/WellMusicUserApi.mm || (echo "FAIL: WellMusicUserApi.mm missing" && exit 1)
+          test -f ios/WellMusic/user-api-preload.js || (echo "FAIL: user-api-preload.js missing" && exit 1)
+          grep -q "WellMusicUserApi.mm" ios/WellMusic.xcodeproj/project.pbxproj || (echo "FAIL: mm not in pbxproj" && exit 1)
+          grep -q "user-api-preload.js" ios/WellMusic.xcodeproj/project.pbxproj || (echo "FAIL: preload not in pbxproj" && exit 1)
+          grep -q "Security.framework" ios/WellMusic.xcodeproj/project.pbxproj || (echo "FAIL: Security.framework missing" && exit 1)
+          echo "VERIFY OK: lx user-api injected into native project"
+
+      - name: CocoaPods install
+        run: cd ios && pod install
+        env:
+          CI: '1'
+
+      - name: Build Release app (unsigned, TrollStore-ready)
+        run: |
+          xcodebuild -workspace ios/WellMusic.xcworkspace \
+            -scheme WellMusic \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            SWIFT_VERSION=5.0 \
+            build
+        env:
+          CI: '1'
+
+      - name: Package unsigned IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/WellMusic.app Payload/
+          zip -qry WellMusic.ipa Payload
+          ls -la WellMusic.ipa
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wellmusic-ipa
+          path: WellMusic.ipa
+          retention-days: 14

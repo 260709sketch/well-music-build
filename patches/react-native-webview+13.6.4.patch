@@ -1,0 +1,27 @@
+diff --git a/node_modules/react-native-webview/apple/RNCWebViewImpl.m b/node_modules/react-native-webview/apple/RNCWebViewImpl.m
+index a59c258..6d22e5e 100644
+--- a/node_modules/react-native-webview/apple/RNCWebViewImpl.m
++++ b/node_modules/react-native-webview/apple/RNCWebViewImpl.m
+@@ -418,6 +418,22 @@ RCTAutoInsetsProtocol>
+     }
+   }
+ #endif
++
++  // Disable 60 FPS pacing in WebKit to enable 120Hz ProMotion for AMLL lyrics
++  // Directly call _setEnabled:forFeature: with NSString feature name.
++  // The previous implementation tried +[WKPreferences _features] (class method)
++  // which doesn't exist; _features is an instance method, so the check always
++  // failed and the pacing was never actually disabled.
++  {
++    SEL setSelector = NSSelectorFromString(@"_setEnabled:forFeature:");
++    if ([prefs respondsToSelector:setSelector]) {
++      typedef void (*SetEnabledFn)(id, SEL, BOOL, NSString *);
++      SetEnabledFn impl = (SetEnabledFn)[prefs methodForSelector:setSelector];
++      impl(prefs, setSelector, NO, @"PreferPageRenderingUpdatesNear60FPSEnabled");
++      _prefsUsed = YES;
++    }
++  }
++
+   if (_prefsUsed) {
+     wkWebViewConfig.preferences = prefs;
+   }
