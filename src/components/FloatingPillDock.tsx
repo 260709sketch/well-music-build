@@ -37,7 +37,7 @@ const COVER_SIZE = 42           // 封面尺寸
 const COVER_RADIUS = 9
 const PILL_HEIGHT = 56          // 选中块高度（Kumone: contentHeight=56）
 const PILL_INSET = 4            // 选中块左右内边距（Kumone: cellW-8）
-const PILL_RADIUS = 16          // Kumone 风格圆角（Capsule continuous）
+const PILL_RADIUS = 28          // Kumone 全圆角胶囊（=PILL_HEIGHT/2）
 const ACCENT_LIGHT = '#F24A5E'
 const ACCENT_DARK = '#FF5F70'
 
@@ -371,7 +371,7 @@ export const FloatingPillDock = () => {
 		if (tabBarWidth.value <= 0) return
 		const cellW = tabBarWidth.value / NAV_TABS.length
 		const x = index * cellW  // ActiveBubble 的 left 已经是 PILL_INSET
-		if (animate) bubbleX.value = withSpring(x, { damping: 22, stiffness: 230 })
+		if (animate) bubbleX.value = withSpring(x, { damping: 29, stiffness: 322 })
 		else bubbleX.value = x
 	}, [tabBarWidth, bubbleX])
 
@@ -438,7 +438,7 @@ export const FloatingPillDock = () => {
 					if (idx < 0) idx = 0
 					if (idx > NAV_TABS.length - 1) idx = NAV_TABS.length - 1
 					const targetX = idx * cellW
-					bubbleX.value = withSpring(targetX, { damping: 22, stiffness: 230 })
+					bubbleX.value = withSpring(targetX, { damping: 29, stiffness: 322 })
 					runOnJS(handleDragEnd)(idx)
 				}),
 		[tabBarWidth, bubbleX, startBubbleX, dragging, handleDragEnd],

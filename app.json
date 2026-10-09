@@ -56,6 +56,7 @@
       "./plugins/with-airplay",
       "./plugins/with-flac-converter",
       "./plugins/with-bluetooth-auto-pause",
+      "./plugins/with-sheet-modal",
       [
         "expo-share-intent",
         {

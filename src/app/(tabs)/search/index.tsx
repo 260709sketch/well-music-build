@@ -150,6 +150,8 @@ const SearchlistsScreen = () => {
 	const scrollRef = useRef<ScrollView>(null)
 	// 搜索框入场动画：普通下移淡入
 	const searchBoxAnim = useRef(new Animated.Value(0)).current
+	const [searchFocused, setSearchFocused] = useState(false)
+	const searchFocusAnim = useRef(new Animated.Value(0)).current
 	useEffect(() => {
 		Animated.timing(searchBoxAnim, {
 			toValue: 1,
@@ -440,6 +442,43 @@ const SearchlistsScreen = () => {
 
 	return (
 		<View style={styles.container}>
+			{/* 搜索框：固定在顶部，点击后上移到导航栏位置 */}
+			<Animated.View style={[styles.searchBoxWrapper, {
+				paddingTop: top,
+				transform: [{ translateY: searchFocusAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -8] }) }],
+			}]}>
+				<Animated.View style={[styles.searchBox, {
+					opacity: searchBoxAnim,
+					backgroundColor: isDark ? 'rgba(120,120,128,0.18)' : '#F2F2F2',
+				}]}>
+					<SFSymbol systemName="magnifyingglass" size={17} color={muted} />
+					<TextInput
+						ref={inputRef}
+						style={styles.searchInput}
+						value={searchInput}
+						onChangeText={handleSearchInputChange}
+						onSubmitEditing={doSearch}
+						onFocus={() => {
+							setSearchFocused(true)
+							Animated.timing(searchFocusAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start()
+						}}
+						onBlur={() => {
+							setSearchFocused(false)
+							Animated.timing(searchFocusAnim, { toValue: 0, duration: 250, useNativeDriver: true }).start()
+						}}
+						placeholder="搜索歌曲"
+						placeholderTextColor={muted}
+						returnKeyType="search"
+						clearButtonMode="never"
+					/>
+					{searchInput.length > 0 ? (
+						<TouchableOpacity onPress={clearInput} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+							<SFSymbol systemName="xmark.circle.fill" size={17} color={muted} />
+						</TouchableOpacity>
+					) : null}
+				</Animated.View>
+			</Animated.View>
+
 			<ScrollView
 				ref={scrollRef}
 				contentContainerStyle={[styles.scrollContent, showResult && styles.scrollContentSearched]}
@@ -450,32 +489,6 @@ const SearchlistsScreen = () => {
 				onScroll={handleScroll}
 				scrollEventThrottle={16}
 			>
-				{/* 搜索框 */}
-				<Animated.View style={[styles.searchBox, {
-					opacity: searchBoxAnim,
-					transform: [{ translateY: searchBoxAnim.interpolate({ inputRange: [0, 1], outputRange: [-12, 0] }) }]
-				}]}>
-					<SFSymbol systemName="magnifyingglass" size={19} color={muted} />
-					<TextInput
-						ref={inputRef}
-						style={styles.searchInput}
-						value={searchInput}
-						onChangeText={handleSearchInputChange}
-						onSubmitEditing={doSearch}
-						placeholder="搜索歌曲、歌手、专辑、歌单"
-						placeholderTextColor={muted}
-						returnKeyType="search"
-						clearButtonMode="never"
-					/>
-					{searchInput.length > 0 ? (
-						<TouchableOpacity style={styles.clearCircle} onPress={clearInput} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-							<SFSymbol systemName="xmark" size={12} color={isDark ? '#1c1c1e' : '#fff'} />
-						</TouchableOpacity>
-					) : null}
-					<TouchableOpacity onPress={doSearch} hitSlop={{ top: 10, bottom: 10, left: 8, right: 4 }}>
-						<Text style={styles.searchBtnText}>搜索</Text>
-					</TouchableOpacity>
-					</Animated.View>
 
 				{/* 分段：综合/单曲/歌手/专辑/歌单（仅搜索时显示） */}
 				{showResult ? (
