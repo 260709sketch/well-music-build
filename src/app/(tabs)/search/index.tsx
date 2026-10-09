@@ -150,19 +150,19 @@ const SearchlistsScreen = () => {
 	const scrollRef = useRef<ScrollView>(null)
 	// 搜索框入场动画：普通下移淡入
 	const searchBoxAnim = useRef(new Animated.Value(0)).current
-	const [searchFocused, setSearchFocused] = useState(false)
-	const searchFocusAnim = useRef(new Animated.Value(0)).current
 	useEffect(() => {
 		Animated.timing(searchBoxAnim, {
 			toValue: 1,
 			duration: 350,
-			useNativeDriver: true,
+			useNativeDriver: false,
 		}).start()
 	}, [])
 	const { onScroll: onSearchFabScroll, scrollToTop: searchScrollToTop, progress: searchFabProgress, shown: searchFabShown } = useScrollToTop(scrollRef)
 	const [searchType, setSearchType] = useState<SearchTab>('all')
 
 	const [searchPlatform, setSearchPlatform] = useState<SearchPlatform>('netease')
+	const [platformSwitchStyle, setPlatformSwitchStyle] = useState<string>(PersistStatus.get('search.platformSwitchStyle' as any) || 'navbar')
+	const isNativePlatformSwitch = platformSwitchStyle === 'native'
 	const [searchInput, setSearchInput] = useState('')
 	const [platformHotWords, setPlatformHotWords] = useState<string[]>([])
 
@@ -320,13 +320,15 @@ const SearchlistsScreen = () => {
 		setSearchPlatform(platform)
 	}, [])
 
-	// 导航栏标题动态变化：未搜索"搜索"，搜索后"搜索：关键词"
+	// 导航栏：固定标题，平台切换方式决定右上角按钮
 	useEffect(() => {
 		navigation.setOptions({
-			title: keyword ? `搜索：${keyword}` : '搜索',
-			headerRight: () => null,
+			title: '搜索',
+			headerRight: isNativePlatformSwitch ? () => null : () => (
+				<PlatformHeaderButton current={searchPlatform} isDark={isDark} onSelect={handlePlatformChange} />
+			),
 		})
-	}, [navigation, keyword])
+	}, [navigation, searchPlatform, isDark, handlePlatformChange, isNativePlatformSwitch])
 
 	const doSearch = useCallback(() => {
 		Keyboard.dismiss()
@@ -450,64 +452,61 @@ const SearchlistsScreen = () => {
 				keyboardDismissMode="on-drag"
 				onScroll={handleScroll}
 				scrollEventThrottle={16}
-				stickyHeaderIndices={[0]}
 			>
-				{/* 搜索框：sticky 固定在顶部，点击聚焦时上移动画 */}
+				{/* 搜索框 */}
 				<Animated.View style={[styles.searchBox, {
 					opacity: searchBoxAnim,
-					backgroundColor: isDark ? 'rgba(120,120,128,0.18)' : '#F2F2F2',
-					transform: [{ translateY: searchFocusAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }) }],
+					transform: [{ translateY: searchBoxAnim.interpolate({ inputRange: [0, 1], outputRange: [-12, 0] }) }]
 				}]}>
-					<SFSymbol systemName="magnifyingglass" size={17} color={muted} />
+					<SFSymbol systemName="magnifyingglass" size={19} color={muted} />
 					<TextInput
 						ref={inputRef}
 						style={styles.searchInput}
 						value={searchInput}
 						onChangeText={handleSearchInputChange}
 						onSubmitEditing={doSearch}
-						onFocus={() => {
-							setSearchFocused(true)
-							Animated.timing(searchFocusAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start()
-						}}
-						onBlur={() => {
-							setSearchFocused(false)
-							Animated.timing(searchFocusAnim, { toValue: 0, duration: 250, useNativeDriver: true }).start()
-						}}
-						placeholder="搜索歌曲"
+						placeholder="搜索歌曲、歌手、专辑、歌单"
 						placeholderTextColor={muted}
 						returnKeyType="search"
 						clearButtonMode="never"
 					/>
 					{searchInput.length > 0 ? (
-						<TouchableOpacity onPress={clearInput} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-							<SFSymbol systemName="xmark.circle.fill" size={17} color={muted} />
+						<TouchableOpacity style={styles.clearCircle} onPress={clearInput} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+							<SFSymbol systemName="xmark" size={12} color={isDark ? '#1c1c1e' : '#fff'} />
 						</TouchableOpacity>
 					) : null}
-				</Animated.View>
+					<TouchableOpacity onPress={doSearch} hitSlop={{ top: 10, bottom: 10, left: 8, right: 4 }}>
+						<Text style={styles.searchBtnText}>搜索</Text>
+					</TouchableOpacity>
+					</Animated.View>
 
-				{/* 搜索结果：平台分段 + 类型分段（Kumone 布局） */}
+				{/* 分段：仅搜索时显示 */}
 				{showResult ? (
 					<>
-						{/* 平台切换：网易云 / QQ音乐 */}
-						<SegmentedControl
-							values={PLATFORMS.map((p) => p.name)}
-							selectedIndex={PLATFORMS.findIndex((p) => p.id === searchPlatform)}
-							onChange={(event) => {
-								const idx = event.nativeEvent.selectedSegmentIndex
-								handlePlatformChange(PLATFORMS[idx].id)
-							}}
-							style={{ marginHorizontal: 16, marginTop: 12, marginBottom: 4 }}
-						/>
-						{/* 类型切换：综合/单曲/歌手/专辑 */}
-						<SegmentedControl
-							values={SEARCH_TYPES.map((t) => t.name)}
-							selectedIndex={SEARCH_TYPES.findIndex((t) => t.id === searchType)}
-							onChange={(event) => {
-								const idx = event.nativeEvent.selectedSegmentIndex
-								handleSearchTypeChange(SEARCH_TYPES[idx].id)
-							}}
-							style={{ marginHorizontal: 16, marginVertical: 8 }}
-						/>
+						{/* iOS原生切换模式：平台分段在页面内 */}
+						{isNativePlatformSwitch && (
+							<SegmentedControl
+								values={PLATFORMS.map((p) => p.name)}
+								selectedIndex={PLATFORMS.findIndex((p) => p.id === searchPlatform)}
+								onChange={(event) => {
+									const idx = event.nativeEvent.selectedSegmentIndex
+									handlePlatformChange(PLATFORMS[idx].id)
+								}}
+								style={{ marginHorizontal: 16, marginTop: 12, marginBottom: 4 }}
+							/>
+						)}
+						{/* 类型分段 */}
+						<View style={{ marginBottom: -8 }}>
+							<SegmentedControl
+								values={SEARCH_TYPES.map((t) => t.name)}
+								selectedIndex={SEARCH_TYPES.findIndex((t) => t.id === searchType)}
+								onChange={(event) => {
+									const idx = event.nativeEvent.selectedSegmentIndex
+									handleSearchTypeChange(SEARCH_TYPES[idx].id)
+								}}
+								style={{ marginHorizontal: 16, marginVertical: 8 }}
+							/>
+						</View>
 					</>
 				) : null}
 

@@ -307,6 +307,7 @@ const SettingsPage = () => {
 	const [builtinSourceToastEnabled, setBuiltinSourceToastEnabled] = useState(PersistStatus.get('music.builtinSourceToastEnabled' as any) !== 'false')
 
 	const [showSearchHistory, setShowSearchHistory] = useState(PersistStatus.get('search.showHistory' as any) !== false)
+	const [platformSwitchStyle, setPlatformSwitchStyle] = useState(PersistStatus.get('search.platformSwitchStyle' as any) || 'navbar')
 	const [stylizedRecommend, setStylizedRecommend] = useState(PersistStatus.get('music.showStylizedRecommend' as any) === true)
 	const [kbMiniOffset, setKbMiniOffset] = useState(parseInt(PersistStatus.get('app.keyboardMiniPlayerOffset' as any) || '0', 10))
 
@@ -504,6 +505,17 @@ const SettingsPage = () => {
 						<SwitchRow title="歌曲列表上浮动画" subtitle="进入歌单页面时，歌曲行从底部上浮入场" value={songFloatAnimation} onSwitch={(v: boolean) => { setSongFloatAnimation(v); PersistStatus.set('music.songFloatAnimation' as any, v) }} />
                                             <SwitchRow title="发现页上浮动画" subtitle="进入发现页时，页面内容从底部上浮入场" value={homeFloatAnimation} onSwitch={(v: boolean) => { setHomeFloatAnimation(v); PersistStatus.set('music.homeFloatAnimation' as any, v) }} />
 						<SwitchRow title="搜索历史" subtitle="关闭后搜索页不展示历史记录和热搜榜" value={showSearchHistory} onSwitch={(v: boolean) => { setShowSearchHistory(v); PersistStatus.set('search.showHistory' as any, v) }} />
+						<View style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
+							<Text style={[styles.rowTitle, { color: colors.text, marginBottom: 6 }]}>平台切换样式</Text>
+							<Segmented
+								options={[
+									{ value: 'navbar', label: '吸附导航栏' },
+									{ value: 'native', label: 'iOS原生切换' },
+								]}
+								value={platformSwitchStyle}
+								onChange={(v: string) => { setPlatformSwitchStyle(v); PersistStatus.set('search.platformSwitchStyle' as any, v) }}
+							/>
+						</View>
 						<SwitchRow title="风格化推荐" subtitle="发现页展示风格化推荐歌单" value={stylizedRecommend} onSwitch={(v: boolean) => { setStylizedRecommend(v); PersistStatus.set('music.showStylizedRecommend' as any, v) }} last />
 						</ExpandableRow>
 					</>
