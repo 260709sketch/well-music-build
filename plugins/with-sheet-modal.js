@@ -39,10 +39,12 @@ module.exports = function withSheetModal(config) {
       if (f.endsWith('.m')) {
         try {
           addBuildSourceFileToGroup({
-            filepath: f,
+            filepath: `${projectName}/${f}`,
             groupName: projectName,
             project,
+            verbose: true,
           })
+          console.log(`[with-sheet-modal] added ${f} to ${projectName} target`)
         } catch (e) {
           console.warn(`[with-sheet-modal] failed to add ${f}: ${e.message}`)
         }
