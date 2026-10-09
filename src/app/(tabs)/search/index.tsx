@@ -163,6 +163,11 @@ const SearchlistsScreen = () => {
 	const [searchPlatform, setSearchPlatform] = useState<SearchPlatform>('netease')
 	const [platformSwitchStyle, setPlatformSwitchStyle] = useState<string>(PersistStatus.get('search.platformSwitchStyle' as any) || 'navbar')
 	const isNativePlatformSwitch = platformSwitchStyle === 'native'
+	useFocusEffect(
+		useCallback(() => {
+			setPlatformSwitchStyle(PersistStatus.get('search.platformSwitchStyle' as any) || 'navbar')
+		}, [])
+	)
 	const [searchInput, setSearchInput] = useState('')
 	const [platformHotWords, setPlatformHotWords] = useState<string[]>([])
 
@@ -458,18 +463,24 @@ const SearchlistsScreen = () => {
 					opacity: searchBoxAnim,
 					transform: [{ translateY: searchBoxAnim.interpolate({ inputRange: [0, 1], outputRange: [-12, 0] }) }]
 				}]}>
-					<SFSymbol systemName="magnifyingglass" size={19} color={muted} />
-					<TextInput
-						ref={inputRef}
-						style={styles.searchInput}
-						value={searchInput}
-						onChangeText={handleSearchInputChange}
-						onSubmitEditing={doSearch}
-						placeholder="搜索歌曲、歌手、专辑、歌单"
-						placeholderTextColor={muted}
-						returnKeyType="search"
-						clearButtonMode="never"
-					/>
+					<TouchableOpacity
+						style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
+						onPress={() => inputRef.current?.focus()}
+						activeOpacity={1}
+					>
+						<SFSymbol systemName="magnifyingglass" size={19} color={muted} />
+						<TextInput
+							ref={inputRef}
+							style={styles.searchInput}
+							value={searchInput}
+							onChangeText={handleSearchInputChange}
+							onSubmitEditing={doSearch}
+							placeholder="搜索歌曲、歌手、专辑、歌单"
+							placeholderTextColor={muted}
+							returnKeyType="search"
+							clearButtonMode="never"
+						/>
+					</TouchableOpacity>
 					{searchInput.length > 0 ? (
 						<TouchableOpacity style={styles.clearCircle} onPress={clearInput} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
 							<SFSymbol systemName="xmark" size={12} color={isDark ? '#1c1c1e' : '#fff'} />
@@ -480,35 +491,38 @@ const SearchlistsScreen = () => {
 					</TouchableOpacity>
 					</Animated.View>
 
-				{/* 分段：仅搜索时显示 */}
-				{showResult ? (
-					<>
-						{/* iOS原生切换模式：平台分段在页面内 */}
-						{isNativePlatformSwitch && (
-							<SegmentedControl
-								values={PLATFORMS.map((p) => p.name)}
-								selectedIndex={PLATFORMS.findIndex((p) => p.id === searchPlatform)}
-								onChange={(event) => {
-									const idx = event.nativeEvent.selectedSegmentIndex
-									handlePlatformChange(PLATFORMS[idx].id)
-								}}
-								style={{ marginHorizontal: 16, marginTop: 12, marginBottom: 4 }}
-							/>
-						)}
-						{/* 类型分段 */}
-						<View style={{ marginBottom: -8 }}>
-							<SegmentedControl
-								values={SEARCH_TYPES.map((t) => t.name)}
-								selectedIndex={SEARCH_TYPES.findIndex((t) => t.id === searchType)}
-								onChange={(event) => {
-									const idx = event.nativeEvent.selectedSegmentIndex
-									handleSearchTypeChange(SEARCH_TYPES[idx].id)
-								}}
-								style={{ marginHorizontal: 16, marginVertical: 8 }}
-							/>
-						</View>
-					</>
-				) : null}
+				{/* 分段控制：sticky 固定在导航栏下，必须是直接子元素且始终渲染 */}
+				<View style={{
+					backgroundColor: isDark ? '#000' : '#fff',
+					overflow: 'hidden',
+					zIndex: 10,
+					...(showResult ? {} : { height: 0, opacity: 0 }),
+				}}>
+					{/* iOS原生切换模式：平台分段在页面内 */}
+					{isNativePlatformSwitch && (
+						<SegmentedControl
+							values={PLATFORMS.map((p) => p.name)}
+							selectedIndex={PLATFORMS.findIndex((p) => p.id === searchPlatform)}
+							onChange={(event) => {
+								const idx = event.nativeEvent.selectedSegmentIndex
+								handlePlatformChange(PLATFORMS[idx].id)
+							}}
+							style={{ marginHorizontal: 8, marginTop: 6, marginBottom: 2 }}
+						/>
+					)}
+					{/* 类型分段 */}
+					<View style={{ marginBottom: -8 }}>
+						<SegmentedControl
+							values={SEARCH_TYPES.map((t) => t.name)}
+							selectedIndex={SEARCH_TYPES.findIndex((t) => t.id === searchType)}
+							onChange={(event) => {
+								const idx = event.nativeEvent.selectedSegmentIndex
+								handleSearchTypeChange(SEARCH_TYPES[idx].id)
+							}}
+							style={{ marginHorizontal: 8, marginVertical: 8 }}
+						/>
+					</View>
+				</View>
 
 				{/* 未搜索：历史搜索 + 热搜 */}
 				{!showResult && showSearchHistory && (
