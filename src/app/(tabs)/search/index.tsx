@@ -25,7 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useFocusEffect } from 'expo-router'
 import { useTabBarStyleStore } from '@/store/tabBarStyleStore'
 import PersistStatus from '@/store/PersistStatus'
-import SmoothSegmentedControl from '@/components/SmoothSegmentedControl'
+import SegmentedControl from '@react-native-segmented-control/segmented-control'
 import FastImage from 'react-native-fast-image'
 import { unknownTrackImageUri } from '@/constants/images'
 import { shouldCacheImage } from '@/store/cacheManagerStore'
@@ -480,11 +480,15 @@ const SearchlistsScreen = () => {
 				{/* 分段：综合/单曲/歌手/专辑/歌单（仅搜索时显示） */}
 				{showResult ? (
 					<View style={{ marginBottom: -8 }}>
-						<SmoothSegmentedControl
-							options={SEARCH_TYPES.map((t) => ({ key: t.id, label: t.name }))}
-							activeKey={searchType}
-							onChange={handleSearchTypeChange}
-						/>
+						<SegmentedControl
+						values={SEARCH_TYPES.map((t) => t.name)}
+						selectedIndex={SEARCH_TYPES.findIndex((t) => t.id === searchType)}
+						onChange={(event) => {
+							const idx = event.nativeEvent.selectedSegmentIndex
+							handleSearchTypeChange(SEARCH_TYPES[idx].id)
+						}}
+						style={{ marginHorizontal: 16, marginVertical: 8 }}
+					/>
 					</View>
 				) : null}
 
