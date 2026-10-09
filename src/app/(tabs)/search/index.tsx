@@ -156,7 +156,7 @@ const SearchlistsScreen = () => {
 		Animated.timing(searchBoxAnim, {
 			toValue: 1,
 			duration: 350,
-			useNativeDriver: false,
+			useNativeDriver: true,
 		}).start()
 	}, [])
 	const { onScroll: onSearchFabScroll, scrollToTop: searchScrollToTop, progress: searchFabProgress, shown: searchFabShown } = useScrollToTop(scrollRef)
