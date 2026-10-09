@@ -33,7 +33,7 @@
     "expo-localization": "~17.0.9",
     "expo-music-info-2": "^2.0.0",
     "expo-router": "~6.0.24",
-    "expo-share-intent": "^8.0.1",
+    "expo-share-intent": "^5.1.1",
     "expo-status-bar": "~3.0.9",
     "expo-symbols": "~1.0.8",
     "fast-text-encoding": "^1.0.6",
