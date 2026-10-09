@@ -12,7 +12,7 @@ import { useNavigation, useRouter } from 'expo-router'
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import FastImage from 'react-native-fast-image'
-import SmoothSegmentedControl from '@/components/SmoothSegmentedControl'
+import SegmentedControl from '@react-native-segmented-control/segmented-control'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const TABS = [
@@ -162,10 +162,14 @@ const ListenRankScreen = () => {
 	const header = (
 		<View style={{ paddingHorizontal: 16, paddingTop: solidNavBarEnabled ? 0 : insets.top + 44 + 4 }}>
 			{/* 周榜 / 总榜 分段 */}
-			<SmoothSegmentedControl
-				options={TABS.map((t) => ({ key: String(t.key), label: t.label }))}
-				activeKey={String(tab)}
-				onChange={(key) => setTab(Number(key))}
+			<SegmentedControl
+				values={TABS.map((t) => t.label)}
+				selectedIndex={TABS.findIndex((t) => t.key === tab)}
+				onChange={(event) => {
+					const idx = event.nativeEvent.selectedSegmentIndex
+					setTab(TABS[idx].key)
+				}}
+				style={{ marginHorizontal: 16, marginVertical: 8 }}
 			/>
 
 			<View style={styles.actionRow}>

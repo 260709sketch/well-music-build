@@ -35,9 +35,9 @@ const TAB_MARGIN = 9            // Tab 胶囊左右边距
 const CAPSULE_GAP = 8           // 两个胶囊间距
 const COVER_SIZE = 42           // 封面尺寸
 const COVER_RADIUS = 9
-const PILL_HEIGHT = 56          // 选中块高度
-const PILL_WIDTH = 88           // 选中块宽度（横向椭圆胶囊，包住图标+文字）
-const PILL_RADIUS = 28          // 全圆角（=高度/2，椭圆胶囊）
+const PILL_HEIGHT = 56          // 选中块高度（Kumone: contentHeight=56）
+const PILL_INSET = 4            // 选中块左右内边距（Kumone: cellW-8）
+const PILL_RADIUS = 16          // Kumone 风格圆角（Capsule continuous）
 const ACCENT_LIGHT = '#F24A5E'
 const ACCENT_DARK = '#FF5F70'
 
@@ -265,20 +265,22 @@ export const MiniPlayerCapsule = ({ onPress, isDark, blurTint }: { onPress: () =
 	)
 }
 
-// ========== 选中圆形衬底（固定宽度，大圆角） ==========
-const ActiveBubble = ({ translateX, isDark }: { translateX: Animated.SharedValue<number>; isDark: boolean }) => {
-	const animStyle = useAnimatedStyle(() => ({ transform: [{ translateX: translateX.value }] }))
+// ========== Kumone 风格选中衬底（填满 cell 宽度，全高，淡色） ==========
+const ActiveBubble = ({ translateX, cellW, isDark }: { translateX: Animated.SharedValue<number>; cellW: Animated.SharedValue<number>; isDark: boolean }) => {
+	const animStyle = useAnimatedStyle(() => ({
+		transform: [{ translateX: translateX.value }],
+		width: Math.max(cellW.value - PILL_INSET * 2, 40),
+	}))
 	return (
 		<Animated.View
 			style={[
 				{
 					position: 'absolute',
 					top: (TAB_BAR_HEIGHT - PILL_HEIGHT) / 2,
-					left: 0,
+					left: PILL_INSET,
 					height: PILL_HEIGHT,
-					width: PILL_WIDTH,
 					borderRadius: PILL_RADIUS,
-					backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)',
+					backgroundColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.075)',
 					zIndex: 1,
 				},
 				animStyle,
@@ -352,6 +354,7 @@ export const FloatingPillDock = () => {
 	}, [pathname])
 
 	const tabBarWidth = useSharedValue(0)
+	const cellW = useSharedValue(0)
 	const bubbleX = useSharedValue(0)
 	const startBubbleX = useSharedValue(0)
 	const dragging = useSharedValue(false)
@@ -367,7 +370,7 @@ export const FloatingPillDock = () => {
 	const moveBubble = useCallback((index: number, animate: boolean) => {
 		if (tabBarWidth.value <= 0) return
 		const cellW = tabBarWidth.value / NAV_TABS.length
-		const x = index * cellW + (cellW - PILL_WIDTH) / 2
+		const x = index * cellW  // ActiveBubble 的 left 已经是 PILL_INSET
 		if (animate) bubbleX.value = withSpring(x, { damping: 22, stiffness: 230 })
 		else bubbleX.value = x
 	}, [tabBarWidth, bubbleX])
@@ -382,11 +385,12 @@ export const FloatingPillDock = () => {
 		const width = e.nativeEvent.layout.width
 		if (width <= 0) return
 		tabBarWidth.value = width
+		cellW.value = width / NAV_TABS.length
 		const idx = getActiveTabIndex(pathname)
 		const useIdx = idx >= 0 ? idx : lastValidIndex.current
 		lastValidIndex.current = useIdx
 		moveBubble(useIdx, false)
-	}, [tabBarWidth, pathname, moveBubble])
+	}, [tabBarWidth, cellW, pathname, moveBubble])
 
 	useEffect(() => {
 		if (dragging.value) return
@@ -416,8 +420,8 @@ export const FloatingPillDock = () => {
 					'worklet'
 					if (tabBarWidth.value <= 0) return
 					const cellW = tabBarWidth.value / NAV_TABS.length
-					const minX = (cellW - PILL_WIDTH) / 2
-					const maxX = (NAV_TABS.length - 1) * cellW + (cellW - PILL_WIDTH) / 2
+					const minX = 0
+					const maxX = (NAV_TABS.length - 1) * cellW
 					let nx = startBubbleX.value + event.translationX
 					if (nx < minX) nx = minX
 					if (nx > maxX) nx = maxX
@@ -430,10 +434,10 @@ export const FloatingPillDock = () => {
 						return
 					}
 					const cellW = tabBarWidth.value / NAV_TABS.length
-					let idx = Math.round((bubbleX.value - (cellW - PILL_WIDTH) / 2) / cellW)
+					let idx = Math.round(bubbleX.value / cellW)
 					if (idx < 0) idx = 0
 					if (idx > NAV_TABS.length - 1) idx = NAV_TABS.length - 1
-					const targetX = idx * cellW + (cellW - PILL_WIDTH) / 2
+					const targetX = idx * cellW
 					bubbleX.value = withSpring(targetX, { damping: 22, stiffness: 230 })
 					runOnJS(handleDragEnd)(idx)
 				}),
@@ -498,7 +502,7 @@ export const FloatingPillDock = () => {
 					onLayout={handleLayout}
 				>
 						<PillGlass borderRadius={TAB_BAR_HEIGHT / 2} isDark={isDark} blurTint={blurTint} />
-						<ActiveBubble translateX={bubbleX} isDark={isDark} />
+						<ActiveBubble translateX={bubbleX} cellW={cellW} isDark={isDark} />
 						<View style={styles.tabsRow}>
 							{NAV_TABS.map((tab, index) => (
 								<TabButton
@@ -528,18 +532,17 @@ const styles = StyleSheet.create({
 	},
 	shadow: {
 		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.05,
-		shadowRadius: 6,
-		elevation: 3,
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.15,
+		shadowRadius: 12,
+		elevation: 5,
 	},
 	playerShadow: {
-		// 迷你播放器阴影均匀向四周扩散，不向下偏移，避免落到 Tab 栏上
 		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 0 },
-		shadowOpacity: 0.08,
-		shadowRadius: 5,
-		elevation: 3,
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.15,
+		shadowRadius: 12,
+		elevation: 5,
 	},
 	placeholderRow: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 	playerInner: {
